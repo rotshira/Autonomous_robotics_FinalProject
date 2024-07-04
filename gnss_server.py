@@ -2,8 +2,9 @@ import socket
 import json
 
 # Define constants and configurations
-HOST = '192.168.33.5'  # Your server IP
+HOST = '192.168.43.53'  # Your server IP
 PORT = 5000
+
 
 # Function to filter satellites by constellation and Otzena
 def filter_satellites(data, constellation=None, otzena_threshold=None):
@@ -13,11 +14,13 @@ def filter_satellites(data, constellation=None, otzena_threshold=None):
         data = [d for d in data if d.get('otzena', 0) > otzena_threshold]
     return data
 
+
 # Function to identify false satellites
 def identify_false_satellites(data):
     # Placeholder: Add your logic to identify false satellites
     # Example: Filter out satellites with unlikely Doppler shift values
     return [d for d in data if abs(d.get('doppler', 0)) < 1000]
+
 
 # Function to detect interference ("Cairo + Beirut")
 def detect_interference(data):
@@ -26,11 +29,13 @@ def detect_interference(data):
     interference_detected = any(d.get('cn0', 0) < 20 for d in data)
     return interference_detected
 
+
 # Function to handle interference
 def handle_interference(data):
     # Placeholder: Add your logic to handle interference
     # Example: Remove data points affected by interference
     return [d for d in data if d.get('cn0', 0) >= 20]
+
 
 # Main function to process incoming GNSS data
 def process_gnss_data(data):
@@ -50,6 +55,7 @@ def process_gnss_data(data):
 
     return filtered_data
 
+
 # Start the server
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -60,28 +66,37 @@ def start_server():
     connection, address = server_socket.accept()
     print(f"Connection established with {address}")
 
+    buffer = ''
     while True:
         data = connection.recv(4096).decode('utf-8')
         if not data:
             break
 
+        buffer += data
         try:
-            gnss_data = json.loads(data)
-            if isinstance(gnss_data, dict):
-                gnss_data = [gnss_data]  # Ensure it is a list of dictionaries
+            while buffer:
+                gnss_data, index = json.JSONDecoder().raw_decode(buffer)
+                buffer = buffer[index:].strip()
 
-            print(f"Received data: {gnss_data}")
+                if isinstance(gnss_data, dict):
+                    gnss_data = [gnss_data]  # Ensure it is a list of dictionaries
 
-            # Process the GNSS data
-            processed_data = process_gnss_data(gnss_data)
+                print(f"Received data: {gnss_data}")
 
-            # Send back the processed data (for example purposes)
-            connection.sendall(json.dumps(processed_data).encode('utf-8'))
+                # Process the GNSS data
+                processed_data = process_gnss_data(gnss_data)
+
+                # Send back the processed data (for example purposes)
+                connection.sendall(json.dumps(processed_data).encode('utf-8'))
+        except json.JSONDecodeError:
+            # Wait for more data
+            continue
         except Exception as e:
             print(f"Error processing data: {e}")
 
     connection.close()
     server_socket.close()
+
 
 if __name__ == "__main__":
     start_server()
