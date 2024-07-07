@@ -53,4 +53,7 @@ The GNSS data should be sent in the following JSON format:
     }
 ]
 
-Enjoy!!🙂
+
+
+
+Enjoy🙂
