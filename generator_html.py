@@ -23,6 +23,7 @@ def generate_or_update_html(latitude, longitude, location_data):
                 width: 100%;
             }}
         </style>
+        <meta http-equiv="refresh" content="5">
     </head>
     <body>
         <h1>GNSS Location</h1>
