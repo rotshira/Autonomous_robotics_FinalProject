@@ -52,3 +52,8 @@ The GNSS data should be sent in the following JSON format:
         "longitude": 35.1710988
     }
 ]
+
+
+
+
+Enjoy🙂
