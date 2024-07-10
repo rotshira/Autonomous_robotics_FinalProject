@@ -1,15 +1,13 @@
 import socket
 import json
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 
 # Define constants and configurations
-HOST = '0.0.0.0'  # Bind to all available network interfaces
-PORT = 5001
+HOST = '10.0.0.2'  # Your server IP
+PORT = 5002
 HTML_FILE = 'gnss_location.html'  # Use a constant file name for updating
 
-# Initialize previous latitude and longitude with None
-previous_latitude = None
-previous_longitude = None
 
 # Function to generate or update HTML using OpenStreetMap and Leaflet.js
 def generate_or_update_html(latitude, longitude, location_data):
@@ -49,91 +47,75 @@ def generate_or_update_html(latitude, longitude, location_data):
         file.write(html_content)
     print(f"HTML file updated with the location data at {HTML_FILE}.")
 
-# Function to detect GNSS spoofing
+
+# Function to detect spoofing based on location data
 def detect_spoofing(data):
-    global previous_latitude, previous_longitude
+    known_good_location = (31.86001198, 35.1710988)  # Replace with your actual coordinates
+    latitude = data.get('latitude', None)
+    longitude = data.get('longitude', None)
 
-    spoofing_detected = False
+    if latitude is not None and longitude is not None:
+        distance = ((latitude - known_good_location[0]) ** 2 + (longitude - known_good_location[1]) ** 2) ** 0.5
+        if distance > 0.001:  # Threshold distance for spoofing detection
+            print("Spoofing detected! Data might be unreliable.")
+        else:
+            print("No spoofing detected.")
+    else:
+        print("Insufficient data for spoofing detection.")
 
-    for location in data:
-        lat = location.get('latitude', 0)
-        lon = location.get('longitude', 0)
-
-        # Log the received coordinates
-        print(f"Checking coordinates for spoofing: Latitude={lat}, Longitude={lon}")
-
-        # Skip spoofing detection if previous coordinates are not set
-        if previous_latitude is None or previous_longitude is None:
-            previous_latitude = lat
-            previous_longitude = lon
-            continue
-
-        # Example: Simple deviation check
-        if abs(lat - previous_latitude) > 0.01 or abs(lon - previous_longitude) > 0.01:
-            spoofing_detected = True
-            break
-
-    return spoofing_detected
 
 # Start the server
 def start_server():
-    global previous_latitude, previous_longitude
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen(1)
+    print("Waiting for connection...")
 
+    connection, address = server_socket.accept()
+    print(f"Connection established with {address}")
+
+    start_time = datetime.now()
+    buffer = ''
     while True:
+        data = connection.recv(4096).decode('utf-8')
+        if not data:
+            break
+
+        buffer += data
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-                server_socket.bind((HOST, PORT))
-                server_socket.listen(1)
-                print("Waiting for connection...")
+            while buffer:
+                gnss_data, index = json.JSONDecoder().raw_decode(buffer)
+                buffer = buffer[index:].strip()
 
-                connection, address = server_socket.accept()
-                with connection:
-                    print(f"Connection established with {address}")
+                if isinstance(gnss_data, dict):
+                    gnss_data = [gnss_data]
 
-                    buffer = ''
-                    while True:
-                        data = connection.recv(4096).decode('utf-8')
-                        if not data:
-                            break
+                print(f"Received data: {gnss_data}")
 
-                        buffer += data
-                        try:
-                            while buffer:
-                                gnss_data, index = json.JSONDecoder().raw_decode(buffer)
-                                buffer = buffer[index:].strip()
+                # Focus on the first valid data point for simplicity
+                for location in gnss_data:
+                    print(f"Processing location data: {location}")
+                    latitude = location.get('latitude', None)
+                    longitude = location.get('longitude', None)
+                    print(f"Extracted coordinates: Latitude={latitude}, Longitude={longitude}")
 
-                                if isinstance(gnss_data, dict):
-                                    gnss_data = [gnss_data]
+                    if latitude is not None and longitude is not None and latitude != 0.0 and longitude != 0.0:
+                        generate_or_update_html(latitude, longitude, location)
+                        break  # Only process the first valid location for now
 
-                                print(f"Received data: {gnss_data}")
+                # Check for spoofing only after 30 seconds
+                if datetime.now() - start_time > timedelta(seconds=30):
+                    detect_spoofing(gnss_data[0])
 
-                                spoofing_detected = detect_spoofing(gnss_data)
-                                if spoofing_detected:
-                                    print("Spoofing detected! Data might be unreliable.")
-                                else:
-                                    # Process and generate HTML only if spoofing is not detected
-                                    for location in gnss_data:
-                                        print(f"Processing location data: {location}")
-                                        latitude = location.get('latitude', None)
-                                        longitude = location.get('longitude', None)
-                                        print(f"Extracted coordinates: Latitude={latitude}, Longitude={longitude}")
-
-                                        if latitude is not None and longitude is not None and latitude != 0.0 and longitude != 0.0:
-                                            generate_or_update_html(latitude, longitude, location)
-                                            previous_latitude = latitude
-                                            previous_longitude = longitude
-                                            break  # Only process the first valid location for now
-                                    break  # Stop after processing the first set of data for now
-
-                        except json.JSONDecodeError as e:
-                            print(f"JSON decode error: {e}")
-                            continue
-                        except Exception as e:
-                            print(f"Error processing data: {e}")
-
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            continue
         except Exception as e:
-            print(f"Server error: {e}")
-            continue  # Restart the server loop if an error occurs
+            print(f"Error processing data: {e}")
+
+    connection.close()
+    server_socket.close()
+
 
 if __name__ == "__main__":
     start_server()
