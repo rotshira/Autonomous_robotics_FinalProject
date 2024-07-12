@@ -40,6 +40,29 @@ This project sets up a server to receive GNSS data, process it, and visualize it
       Install it in your phone and give it location permission, set your network ip and your desired port and start to send data.
       <img width="200" height ="400" alt = "image" src = "https://github.com/user-attachments/assets/6a552ce4-5f0e-4b47-b5c4-5bb0babfd126">
 
+## Tests
+### spoofing_test.py
+This test script is designed to simulate the sending of GNSS (Global Navigation Satellite System) data to a server over a TCP connection. Here’s a summary of what the script does:
+
+1. Connection Setup:
+
+  * It defines the server's IP address (10.0.0.2) and port (5001).
+  * It attempts to establish a TCP connection to the server.
+
+2. Data Transmission:
+
+  * The `send_gnss_data` function creates a GNSS data payload that includes latitude, longitude, altitude, and information about three satellites (such as satellite ID, constellation type, signal-to-noise ratio, Doppler, and pseudorange rate).
+  * It sends this GNSS data to the server in JSON format.
+  * It prints a confirmation message or an error if the transmission fails.
+
+3. Main Execution:
+
+  * Upon establishing a connection, it sends a series of GNSS data points every second:
+      * First, it sends 10 data points with specific coordinates (representing a real location).
+      * Then, it sends another 10 data points with spoofed coordinates (representing New York City).
+ * If the connection to the server fails, it prints an appropriate error message.
+ * 
+The purpose of this test is to verify that the server can receive and process GNSS data correctly, including handling both real and spoofed data points.
 
 ## Example GNSS Data Format
 
