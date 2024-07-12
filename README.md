@@ -3,12 +3,15 @@
 This project sets up a server to receive GNSS data, process it, and visualize it on a map using OpenStreetMap and Leaflet.js. The server listens for incoming GNSS data over a TCP connection, processes the data, and updates an HTML file to display the location on a map.
 
 ## Features
-
 - Receives GNSS data over a TCP connection.
 - Processes the received data to extract latitude and longitude.
 - Updates an HTML file to visualize the location on a map using OpenStreetMap and Leaflet.js.
 - Displays the received GNSS data in a formatted manner within the HTML file.
-
+- **Development of a navigation system based on Raw GNSS measurements, including:**
+  - Ability to edit a real-time position with the help of efficient and accurate algebra.
+  - Ability to filter satellites (by constellation, Otzena, identifying "false" satellites).
+  - Handling disruptions (e.g., "Cairo + Beirut").
+  - Implementing an algorithm to identify and deal with disruptions.
 
 <img width="1379" alt="image" src="https://github.com/user-attachments/assets/c1d6abfc-884f-42d2-965f-889441f8313c">
 
