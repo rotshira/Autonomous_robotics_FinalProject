@@ -61,7 +61,7 @@ This test script is designed to simulate the sending of GNSS (Global Navigation 
       * First, it sends 10 data points with specific coordinates (representing a real location).
       * Then, it sends another 10 data points with spoofed coordinates (representing New York City).
  * If the connection to the server fails, it prints an appropriate error message.
- * 
+   
 The purpose of this test is to verify that the server can receive and process GNSS data correctly, including handling both real and spoofed data points.
 
 ## Example GNSS Data Format
