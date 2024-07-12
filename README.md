@@ -28,7 +28,7 @@ This project sets up a server to receive GNSS data, process it, and visualize it
 
 1. Start the server:
     ```sh
-    python gnss_server.py
+    python webserver.py
     ```
 
 2. Send GNSS data to the server:
